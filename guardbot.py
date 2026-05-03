@@ -56,22 +56,34 @@ async def on_message(message):
     ]
 
     if len(user_message_history[user_id]) > FLOOD_LIMIT:
+        
+        timeout_end = datetime.now() + timeout_duration
+        
         try:
-            await message.author.timeout(timeout_duration, reason="Flood koruma ihlali")
+            await message.author.edit(timedout_until=timeout_end, reason="Flood koruma ihlali - 7 gun timeout")
+            print(f'{message.author.name} adli kullaniciya 7 gun timeout verildi')
         except discord.Forbidden:
-            pass
-        except Exception:
-            pass
+            print('Yetki yok: timeout verilemedi')
+        except Exception as e:
+            print(f'Timeout hatasi: {e}')
+            try:
+                await message.author.timeout(timeout_duration, reason="Flood koruma ihlali")
+                print(f'{message.author.name} adli kullaniciya timeout verildi (alternatif yontem)')
+            except Exception as e2:
+                print(f'Alternatif timeout da basarisiz: {e2}')
 
         try:
+            deleted_count = 0
             async for msg in message.channel.history(limit=200):
                 if msg.author.id == user_id:
                     try:
                         await msg.delete()
+                        deleted_count += 1
                     except:
                         pass
-        except:
-            pass
+            print(f'{deleted_count} adet mesaj silindi')
+        except Exception as e:
+            print(f'Mesaj silme hatasi: {e}')
 
         try:
             dm_channel = await message.author.create_dm()
@@ -88,7 +100,7 @@ async def on_message(message):
                 "Made By -Recyla"
             )
         except:
-            pass
+            print('DM gonderilemedi')
 
         try:
             if user_id in user_message_history:
