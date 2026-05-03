@@ -10,7 +10,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-FLOOD_LIMIT = 3
+FLOOD_LIMIT = 1
 FLOOD_WINDOW = 2
 timeout_duration = timedelta(days=7)
 EXEMPT_CHANNEL_ID = 1499771195585724605
@@ -22,8 +22,8 @@ user_message_history = {}
 async def on_ready():
     print(f'{bot.user} olarak giris yapildi')
     print('Guard bot aktif')
-    print('Flood limit: 3 mesaj / 2 saniye')
-    print('Hizli silme modu aktif')
+    print('Flood limit: 2 saniyede 2 mesaj')
+    print('Hizli algilama modu aktif')
     
     try:
         voice_channel = bot.get_channel(VOICE_CHANNEL_ID)
@@ -48,85 +48,82 @@ async def on_message(message):
     current_time = datetime.now()
 
     if user_id not in user_message_history:
-        user_message_history[user_id] = deque(maxlen=FLOOD_LIMIT + 1)
+        user_message_history[user_id] = []
 
     user_message_history[user_id].append(current_time)
 
-    if len(user_message_history[user_id]) > FLOOD_LIMIT:
-        time_diff = (user_message_history[user_id][-1] - user_message_history[user_id][0]).total_seconds()
+    user_message_history[user_id] = [
+        t for t in user_message_history[user_id] 
+        if (current_time - t).total_seconds() <= FLOOD_WINDOW
+    ]
+
+    if len(user_message_history[user_id]) >= 2:
         
-        if time_diff <= FLOOD_WINDOW:
+        try:
+            await message.author.timeout(timeout_duration, reason="Flood koruma ihlali - 7 gun timeout")
+            print(f'{message.author.name} adli kullaniciya 7 gun timeout verildi')
+        except discord.Forbidden:
+            print('Yetki yok: timeout verilemedi')
+        except Exception as e:
+            print(f'Timeout hatasi: {e}')
+
+        silinen = 0
+        try:
+            async for msg in message.channel.history(limit=50):
+                if msg.author.id == user_id:
+                    try:
+                        await msg.delete()
+                        silinen += 1
+                    except:
+                        pass
+            print(f'{silinen} mesaj silindi')
+        except Exception as e:
+            print(f'Mesaj silme hatasi: {e}')
+
+        try:
+            dm_channel = await message.author.create_dm()
             
-            try:
-                await message.author.timeout(timeout_duration, reason="Flood koruma ihlali - 7 gun timeout")
-                print(f'{message.author.name} adli kullaniciya 7 gun timeout verildi')
-            except discord.Forbidden:
-                print('Yetki yok: timeout verilemedi')
-            except Exception as e:
-                print(f'Timeout hatasi: {e}')
+            embed = discord.Embed(
+                title="KORUMA SISTEMI",
+                description="SUSTURULDUNUZ",
+                color=0xff0000
+            )
+            
+            embed.add_field(
+                name="KULLANICI BILGILERI",
+                value=f"```\nKullanici     : {message.author.name}\nID            : {str(message.author.id)}\n```",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="CEZA BILGILERI",
+                value=f"```\nCeza Nedeni   : FLOOD (2sn/2msaj)\nCeza Suresi   : 7 GUN TIMEOUT\nCeza Durumu   : AKTIF\n```",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="ACIKLAMA",
+                value="```\nBelirtilen süreden fazla mesaj gonderdiginiz icin\n7 gun boyunca sunucuda konusamazsiniz.\nTum mesajlariniz silinmistir.\n```",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="",
+                value="**made by Recyla | Koruma Sistemi**",
+                inline=False
+            )
+            
+            if message.author.avatar:
+                embed.set_thumbnail(url=message.author.avatar.url)
+            
+            await dm_channel.send(embed=embed)
+        except:
+            pass
 
-            try:
-                deleted = 0
-                async for msg in message.channel.history(limit=100):
-                    if msg.author.id == user_id:
-                        try:
-                            await msg.delete()
-                            deleted += 1
-                            await asyncio.sleep(0.1)
-                        except:
-                            pass
-                print(f'{deleted} adet mesaj silindi')
-            except Exception as e:
-                print(f'Mesaj silme hatasi: {e}')
-
-            try:
-                dm_channel = await message.author.create_dm()
-                
-                embed = discord.Embed(
-                    title="KORUMA SISTEMI",
-                    description="SUSTURULDUNUZ",
-                    color=0xff0000
-                )
-                
-                embed.add_field(
-                    name="KULLANICI BILGILERI",
-                    value=f"```\nKullanici     : {message.author.name}\nID            : {str(message.author.id)}\n```",
-                    inline=False
-                )
-                
-                embed.add_field(
-                    name="CEZA BILGILERI",
-                    value=f"```\nCeza Nedeni   : FLOOD\nCeza Suresi   : 7 GUN TIMEOUT\nCeza Durumu   : AKTIF\n```",
-                    inline=False
-                )
-                
-                embed.add_field(
-                    name="ACIKLAMA",
-                    value="```\nBelirtilenden fazla mesaj gönderdiğiniz için\n7 gün boyunca sunucuda konuşamazsınız.\nTüm mesajlarınız silinmiştir.\n```",
-                    inline=False
-                )
-                
-                embed.add_field(
-                    name="",
-                    value="**made by Recyla | Koruma Sistemi**",
-                    inline=False
-                )
-                
-                if message.author.avatar:
-                    embed.set_thumbnail(url=message.author.avatar.url)
-                
-                await dm_channel.send(embed=embed)
-                print(f'DM mesaji {message.author.name} adli kullaniciya gonderildi')
-            except Exception as e:
-                print(f'DM gonderilemedi: {e}')
-
-            try:
-                if user_id in user_message_history:
-                    del user_message_history[user_id]
-            except:
-                pass
-
-            return
+        if user_id in user_message_history:
+            del user_message_history[user_id]
+        
+        return
 
     await bot.process_commands(message)
 
@@ -139,7 +136,6 @@ async def on_voice_state_update(member, before, after):
             voice_channel = bot.get_channel(VOICE_CHANNEL_ID)
             if voice_channel is not None:
                 await voice_channel.connect()
-                print('Ses kanalina yeniden baglanildi')
         except:
             pass
         return
