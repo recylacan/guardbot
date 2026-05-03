@@ -57,48 +57,44 @@ async def on_message(message):
 
     if len(user_message_history[user_id]) > FLOOD_LIMIT:
         
-        timeout_end = datetime.now() + timeout_duration
-        
         try:
-            await message.author.edit(timedout_until=timeout_end, reason="Flood koruma ihlali - 7 gun timeout")
+            await message.author.timeout(timeout_duration, reason="Flood koruma ihlali - 7 gun timeout")
             print(f'{message.author.name} adli kullaniciya 7 gun timeout verildi')
         except discord.Forbidden:
             print('Yetki yok: timeout verilemedi')
         except Exception as e:
             print(f'Timeout hatasi: {e}')
-            try:
-                await message.author.timeout(timeout_duration, reason="Flood koruma ihlali")
-                print(f'{message.author.name} adli kullaniciya timeout verildi (alternatif yontem)')
-            except Exception as e2:
-                print(f'Alternatif timeout da basarisiz: {e2}')
 
         try:
-            deleted_count = 0
             async for msg in message.channel.history(limit=200):
                 if msg.author.id == user_id:
                     try:
                         await msg.delete()
-                        deleted_count += 1
                     except:
                         pass
-            print(f'{deleted_count} adet mesaj silindi')
+            print(f'{message.author.name} adli kullanicinin mesajlari silindi')
         except Exception as e:
             print(f'Mesaj silme hatasi: {e}')
 
         try:
             dm_channel = await message.author.create_dm()
-            await dm_channel.send(
-                "FLOODDAN DOLAYI 7 GUN TIMEOUT YEDIN\n"
-                "UYARI SISTEMI SENI ALGILADI\n"
-                "================================\n"
-                "KANAL IZIN VERILEN HIZDAN DAHA HIZLI MESAJ GONDERDIN\n"
-                "BU FLOOD OLARAK KABUL EDiLiR\n"
-                "7 GUN BOYUNCA SUNUCUDA KONUSAMAYACAKSIN\n"
-                "TUM MESAJLARIN SILINDI\n"
-                "================================\n"
-                "KURALLARA UYMAN DILEGIYLE\n"
-                "Made By -Recyla"
+            
+            embed = discord.Embed(
+                title="KORUMA SISTEMI",
+                description="KULLANICI SUSTURULDU",
+                color=0xff0000
             )
+            
+            embed.add_field(name="Kullanici", value=message.author.name, inline=True)
+            embed.add_field(name="ID", value=str(message.author.id), inline=True)
+            embed.add_field(name="Ceza Nedeni", value="FLOOD (4sn/4msaj)", inline=False)
+            embed.add_field(name="Ceza Suresi", value="7 GUN TIMEOUT", inline=True)
+            embed.add_field(name="Durum", value="AKTIF", inline=True)
+            
+            embed.set_footer(text="made by recyla | Koruma Sistemi")
+            
+            await dm_channel.send(embed=embed)
+            print(f'DM mesaji {message.author.name} adli kullaniciya gonderildi')
         except:
             print('DM gonderilemedi')
 
@@ -121,6 +117,7 @@ async def on_voice_state_update(member, before, after):
             voice_channel = bot.get_channel(VOICE_CHANNEL_ID)
             if voice_channel is not None:
                 await voice_channel.connect()
+                print('Ses kanalina yeniden baglanildi')
         except:
             pass
         return
