@@ -17,7 +17,6 @@ EXEMPT_CHANNEL_ID = 1499771195585724605
 VOICE_CHANNEL_ID = 1499771195267088386
 
 user_message_history = {}
-user_last_message = {}
 
 @bot.event
 async def on_ready():
@@ -66,17 +65,17 @@ async def on_message(message):
             except Exception as e:
                 print(f'Timeout hatasi: {e}')
 
-            await asyncio.sleep(0.1)
-            
             try:
-                async for msg in message.channel.history(limit=50).__aiter():
+                deleted = 0
+                async for msg in message.channel.history(limit=100):
                     if msg.author.id == user_id:
                         try:
                             await msg.delete()
-                            await asyncio.sleep(0.05)
+                            deleted += 1
+                            await asyncio.sleep(0.1)
                         except:
                             pass
-                print(f'{message.author.name} adli kullanicinin mesajlari silindi')
+                print(f'{deleted} adet mesaj silindi')
             except Exception as e:
                 print(f'Mesaj silme hatasi: {e}')
 
