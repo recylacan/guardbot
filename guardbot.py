@@ -81,29 +81,29 @@ async def on_message(message):
             
             embed = discord.Embed(
                 title="**KORUMA SISTEMI**",
-                description="**KULLANICI SUSTURULDU**",
+                description="**SUSTURULDUNUZ !**",
                 color=0xff0000
             )
             
             embed.add_field(
-                name="**KULLANICI BILGILERI**",
-                value=f"**Kullanici:** {message.author.mention}\n**Kullanici Adi:** {message.author.name}\n**ID:** {str(message.author.id)}",
+                name="KULLANICI BILGILERI",
+                value=f"```\nKullanici     : {message.author.name}\nID            : {str(message.author.id)}\n```",
                 inline=False
             )
             
             embed.add_field(
-                name="**CEZA BILGILERI**",
-                value="**Ceza Nedeni:** FLOOD\n**Ceza Suresi:** 7 GUN TIMEOUT\n**Ceza Durumu:** AKTIF",
+                name="CEZA BILGILERI",
+                value=f"```\nCeza Nedeni   : FLOOD\nCeza Suresi   : 7 GUN TIMEOUT\nCeza Durumu   : AKTIF\n```",
                 inline=False
             )
             
             embed.add_field(
-                name="**ACIKLAMA**",
-                value="Belirlenen sure icerisinde izin verilenden fazla mesaj gonderdiginiz icin 7 gun boyunca sunucuda konusamazsiniz. Tum mesajlariniz sistemimiz tarafindan otomatik silinmistir.",
+                name="ACIKLAMA",
+                value="```\nBelirlenen sure icerisinde izin verilenden fazla mesaj\ngonderdiginiz icin 7 gun boyunca sunucuda konusamazsiniz.\nTum mesajlariniz sistemimiz tarafindan otomatik silinmistir.\n```",
                 inline=False
             )
             
-            embed.set_footer(text="made by recyla | Flood Koruma Sistemi")
+            embed.set_footer(text="**made by Recyla | Koruma Sistemi**")
             
             if message.author.avatar:
                 embed.set_thumbnail(url=message.author.avatar.url)
