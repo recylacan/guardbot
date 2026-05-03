@@ -81,7 +81,7 @@ async def on_message(message):
             
             embed = discord.Embed(
                 title="**KORUMA SISTEMI**",
-                description="**SUSTURULDUNUZ !**",
+                description="**SUSTURULDUNUZ**",
                 color=0xff0000
             )
             
@@ -99,11 +99,15 @@ async def on_message(message):
             
             embed.add_field(
                 name="ACIKLAMA",
-                value="```\nBelirlenen sure icerisinde izin verilenden fazla mesaj\ngonderdiginiz icin 7 gun boyunca sunucuda konusamazsiniz.\nTum mesajlariniz sistemimiz tarafindan otomatik silinmistir.\n```",
+                value="```\nBelirlenen süre içerisinde izin verilenden fazla mesaj\ngönderdiğiniz için 7 gün boyunca sunucuda konuşamazsınız.\nKuralları öğrenin ve akıllı bir şekilde takılmaya devam edin.\n```",
                 inline=False
             )
             
-            embed.set_footer(text="**made by Recyla | Koruma Sistemi**")
+            embed.add_field(
+                name="",
+                value="**made by Recyla | Koruma Sistemi**",
+                inline=False
+            )
             
             if message.author.avatar:
                 embed.set_thumbnail(url=message.author.avatar.url)
