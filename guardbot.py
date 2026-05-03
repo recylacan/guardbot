@@ -97,7 +97,7 @@ async def on_message(message):
             
             embed.add_field(
                 name="CEZA BILGILERI",
-                value=f"```\nCeza Nedeni   : FLOOD (2sn/2msaj)\nCeza Suresi   : 7 GUN TIMEOUT\nCeza Durumu   : AKTIF\n```",
+                value=f"```\nCeza Nedeni   : FLOOD\nCeza Suresi   : 7 GUN TIMEOUT\nCeza Durumu   : AKTIF\n```",
                 inline=False
             )
             
