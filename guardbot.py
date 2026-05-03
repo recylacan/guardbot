@@ -80,8 +80,8 @@ async def on_message(message):
             dm_channel = await message.author.create_dm()
             
             embed = discord.Embed(
-                title="**KORUMA SISTEMI**",
-                description="**SUSTURULDUNUZ**",
+                title="KORUMA SISTEMI",
+                description="SUSTURULDUNUZ",
                 color=0xff0000
             )
             
@@ -99,7 +99,7 @@ async def on_message(message):
             
             embed.add_field(
                 name="ACIKLAMA",
-                value="```\nBelirlenen süre içerisinde izin verilenden fazla mesaj\ngönderdiğiniz için 7 gün boyunca sunucuda konuşamazsınız.\nKuralları öğrenin ve akıllı bir şekilde takılmaya devam edin.\n```",
+                value="```\nBelirlenen süre içerisinde izin verilenden fazla mesaj\ngönderdiğiniz için 7 gün boyunca sunucuda konuşamazsınız.\nKuralları ogren ve akıllı bir şekilde takılmaya devam et.\n```",
                 inline=False
             )
             
