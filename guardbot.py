@@ -80,23 +80,38 @@ async def on_message(message):
             dm_channel = await message.author.create_dm()
             
             embed = discord.Embed(
-                title="KORUMA SISTEMI",
-                description="KULLANICI SUSTURULDU",
+                title="**KORUMA SISTEMI**",
+                description="**KULLANICI SUSTURULDU**",
                 color=0xff0000
             )
             
-            embed.add_field(name="Kullanici", value=message.author.name, inline=True)
-            embed.add_field(name="ID", value=str(message.author.id), inline=True)
-            embed.add_field(name="Ceza Nedeni", value="FLOOD (4sn/4msaj)", inline=False)
-            embed.add_field(name="Ceza Suresi", value="7 GUN TIMEOUT", inline=True)
-            embed.add_field(name="Durum", value="AKTIF", inline=True)
+            embed.add_field(
+                name="**KULLANICI BILGILERI**",
+                value=f"**Kullanici:** {message.author.mention}\n**Kullanici Adi:** {message.author.name}\n**ID:** {str(message.author.id)}",
+                inline=False
+            )
             
-            embed.set_footer(text="made by recyla | Koruma Sistemi")
+            embed.add_field(
+                name="**CEZA BILGILERI**",
+                value="**Ceza Nedeni:** FLOOD\n**Ceza Suresi:** 7 GUN TIMEOUT\n**Ceza Durumu:** AKTIF",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="**ACIKLAMA**",
+                value="Belirlenen sure icerisinde izin verilenden fazla mesaj gonderdiginiz icin 7 gun boyunca sunucuda konusamazsiniz. Tum mesajlariniz sistemimiz tarafindan otomatik silinmistir.",
+                inline=False
+            )
+            
+            embed.set_footer(text="made by recyla | Flood Koruma Sistemi")
+            
+            if message.author.avatar:
+                embed.set_thumbnail(url=message.author.avatar.url)
             
             await dm_channel.send(embed=embed)
             print(f'DM mesaji {message.author.name} adli kullaniciya gonderildi')
-        except:
-            print('DM gonderilemedi')
+        except Exception as e:
+            print(f'DM gonderilemedi: {e}')
 
         try:
             if user_id in user_message_history:
@@ -120,9 +135,6 @@ async def on_voice_state_update(member, before, after):
                 print('Ses kanalina yeniden baglanildi')
         except:
             pass
-        return
-    
-    if voice_client.is_connected():
         return
 
 bot.run(BOT_TOKEN)
