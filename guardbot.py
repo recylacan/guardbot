@@ -57,7 +57,7 @@ async def on_message(message):
         if (current_time - t).total_seconds() <= FLOOD_WINDOW
     ]
 
-    if len(user_message_history[user_id]) >= 2:
+    if len(user_message_history[user_id]) >= 3:
         
         try:
             await message.author.timeout(timeout_duration, reason="Flood koruma ihlali - 7 gun timeout")
