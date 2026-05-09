@@ -9,11 +9,11 @@ from collections import deque
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # FLOOD KORUMA AYARLARI
-FLOOD_LIMIT = 3           # 1 saniyede 3 mesaj limit (3 ve üzeri 7 gün timeout)
-FLOOD_WINDOW = 1          # 1 saniye zaman aralığı
+FLOOD_LIMIT = 3
+FLOOD_WINDOW = 1
 timeout_duration = timedelta(days=7)
 
-# KORUMA DIŞI KANAL (Bu kanalda flood koruma çalışmaz)
+# KORUMA DIŞI KANAL
 EXEMPT_CHANNEL_ID = 1499771195585724605
 
 # SES KANALI
@@ -21,11 +21,15 @@ VOICE_CHANNEL_ID = 1499771195267088386
 
 # TAG/ETİKET ROLÜ VE MESAJ KANALI
 HEDEF_ROLE_ID = 1499771194323243279     # Etiket Rol ID
-KANAL_ID = 1499771195585724598          # Mesaj Kanal ID (Tag alınca mesaj atılacak)
+KANAL_ID = 1499771195585724598          # Mesaj Kanal ID
 
 # DURUM ROLÜ AYARI (Aynı ID kullanılıyor)
 DURUM_ROLE_ID = 1499771194323243279     # Durumda verilecek rol ID
 DURUM_TEXT = "/anonymousdc"             # Durumda aranacak yazı
+
+# KRAL TACI EMOJİSİ (Discord emoji ID'si veya Unicode)
+# Eğer sunucunda özel kral tacı emojisi varsa ID'sini yaz, yoksa 👑 kullan
+CROWN_EMOJI = "👑"  # Veya "👑" Unicode
 
 # --- BOT BAŞLANGIÇ ---
 intents = discord.Intents.all()
@@ -83,9 +87,7 @@ async def on_message(message):
     # 1 saniyede 3 veya daha fazla mesaj = 7 gün timeout
     if len(user_message_history[user_id]) >= 3:
         
-        # Kullanıcıya timeout at
         try:
-            # 7 GÜN TIMEOUT
             await message.author.timeout(timeout_duration, reason="Flood koruma ihlali - 7 gün timeout")
             print(f'⛔ {message.author.name} ({message.author.id}) adlı kullanıcıya 7 GÜN timeout verildi (1 saniyede {len(user_message_history[user_id])} mesaj)')
         except discord.Forbidden:
@@ -93,21 +95,17 @@ async def on_message(message):
         except Exception as e:
             print(f'❌ Timeout hatası: {e}')
 
-        # Kullanıcının son 50 mesajını sil
-        silinen = 0
         try:
             async for msg in message.channel.history(limit=50):
                 if msg.author.id == user_id:
                     try:
                         await msg.delete()
-                        silinen += 1
                     except:
                         pass
-            print(f'🗑️ {silinen} mesaj silindi (Kullanıcı: {message.author.name})')
+            print(f'🗑️ Kullanıcının mesajları silindi')
         except Exception as e:
             print(f'❌ Mesaj silme hatası: {e}')
 
-        # DM bilgilendirmesi gönder
         try:
             dm_channel = await message.author.create_dm()
             
@@ -148,7 +146,6 @@ async def on_message(message):
         except:
             pass
 
-        # Kullanıcı geçmişini temizle
         if user_id in user_message_history:
             del user_message_history[user_id]
         
@@ -156,7 +153,7 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-# --- 2. ROL ALINCA MESAJ ATMA (TAG SİSTEMİ) ---
+# --- 2. ROL ALINCA MESAJ ATMA (TAG SİSTEMİ) - GÜNCELLENDİ ---
 @bot.event
 async def on_member_update(before, after):
     # Hedef rol eklenmiş mi kontrol et
@@ -164,13 +161,16 @@ async def on_member_update(before, after):
         
         kanal = bot.get_channel(KANAL_ID)
         if kanal:
+            # Kullanıcının adını ve mention'ını ekle
             embed = discord.Embed(
                 title="Hoşgeldin !",
-                description="**Krallığa Hoşgeldin Dostum**",
-                color=0xFF0000
+                description=f"{after.mention} **Krallığa Hoşgeldin Dostum**",
+                color=0xFF0000  # Kırmızı renk
             )
-            # Görseldeki elmas ikonu
-            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/902106431051948092.png")
+            # Sağ üstte kral tacı emojisi
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/👑.png") 
+            # Not: Discord'da 👑 emojisi URL olarak direkt çalışmaz, 
+            # En iyisi 👑 Unicode kullanmak veya custom emoji ID'si eklemek
             
             await kanal.send(embed=embed)
             print(f'📨 {after.name} adlı kullanıcı tag aldı, hoşgeldin mesajı atıldı.')
@@ -191,6 +191,18 @@ async def on_presence_update(before, after):
                     try:
                         await after.add_roles(rol)
                         print(f'✅ {after.name} adlı kullanıcıya {rol.name} rolü verildi (Durum: {after.activity.name})')
+                        
+                        # Durumdan rol alınca da hoşgeldin mesajı at (İstersen bu kısmı kaldırabilirsin)
+                        kanal = bot.get_channel(KANAL_ID)
+                        if kanal:
+                            embed = discord.Embed(
+                                title="Hoşgeldin !",
+                                description=f"{after.mention} **Krallığa Hoşgeldin Dostum**",
+                                color=0xFF0000
+                            )
+                            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/👑.png")
+                            await kanal.send(embed=embed)
+                            print(f'📨 {after.name} durumdan rol aldı, hoşgeldin mesajı atıldı.')
                     except discord.Forbidden:
                         print('❌ Yetki hatası! Botun rolü, verilecek rolden yukarıda olmalı.')
                     except Exception as e:
