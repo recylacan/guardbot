@@ -27,7 +27,7 @@ KANAL_ID = 1499771195585724598          # Mesaj Kanal ID
 DURUM_ROLE_ID = 1499771194323243279     # Durumda verilecek rol ID
 DURUM_TEXT = "/anonymousdc"             # Durumda aranacak yazı
 
-# RESİM URL (Sağ üstte görünecek)
+# RESİM URL (Tag alanlar için sağ üstte görünecek - Kral tacı)
 THUMBNAIL_URL = "https://i.ibb.co/hJFwL8Yb/indir-4.jpg"
 
 # --- BOT BAŞLANGIÇ ---
@@ -175,7 +175,7 @@ async def on_member_update(before, after):
                     inline=False
                 )
                 
-                # Sağ üstte resim
+                # Sağ üstte kral tacı resmi
                 embed.set_thumbnail(url=THUMBNAIL_URL)
                 
                 # Sol üstte kullanıcı profili
@@ -197,7 +197,7 @@ async def on_member_update(before, after):
                 kanal = bot.get_channel(KANAL_ID)
                 if kanal:
                     embed = discord.Embed(
-                        title="⚠️ ROL KALDIRILDI",
+                        title=" ROL KALDIRILDI",
                         description=f"**{after.mention} adlı kullanıcıdan etiket rolü kaldırıldı!**",
                         color=0xff0000
                     )
@@ -242,10 +242,14 @@ async def on_presence_update(before, after):
                                 )
                                 embed.add_field(
                                     name="",
-                                    value="Durumuna /anonymousdc yazarak topluluğumuza katıldın! Artık bu özel role sahipsin.",
+                                    value=(
+                                        "Durumuna **/anonymousdc** yazarak topluluğumuza katıldın! "
+                                        "Artık bu özel role sahipsin."
+                                    ),
                                     inline=False
                                 )
-                                embed.set_thumbnail(url=THUMBNAIL_URL)
+                                # 📸 SAĞ ÜSTTE KULLANICININ PROFİLİ
+                                embed.set_thumbnail(url=after.display_avatar.url)
                                 embed.set_author(name=after.name, icon_url=after.display_avatar.url)
                                 await kanal.send(embed=embed)
                                 print(f'📨 {after.name} durumdan rol aldı, hoşgeldin mesajı atıldı.')
@@ -267,7 +271,7 @@ async def on_presence_update(before, after):
                     kanal = bot.get_channel(KANAL_ID)
                     if kanal:
                         embed = discord.Embed(
-                            title="⚠️ ROL KALDIRILDI",
+                            title=" ROL KALDIRILDI",
                             description=f"**{after.mention} adlı kullanıcıdan durum rolü kaldırıldı!**",
                             color=0xff0000
                         )
