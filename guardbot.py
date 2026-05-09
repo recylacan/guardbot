@@ -36,6 +36,7 @@ user_message_history = {}
 
 # Rol alan kullanıcıları takip et (2 kere mesaj atmasın diye)
 role_given_users = set()
+role_removed_users = set()  # Rol çekilince mesaj atmasın diye
 
 # --- BOT HAZIR ---
 @bot.event
@@ -178,31 +179,34 @@ async def on_member_update(before, after):
     
     # ROL KALDIRILDIĞINDA (Tag kaldırılınca)
     elif HEDEF_ROLE_ID in [r.id for r in before.roles] and HEDEF_ROLE_ID not in [r.id for r in after.roles]:
-        # Tag kaldırılınca rolü çek
-        rol = after.guild.get_role(HEDEF_ROLE_ID)
-        if rol:
-            try:
-                await after.remove_roles(rol)
-                print(f'{after.name} adlı kullanıcıdan {rol.name} rolü çekildi (Tag kaldırıldı)')
-                
-                kanal = bot.get_channel(KANAL_ID)
-                if kanal:
-                    embed = discord.Embed(
-                        title="ROL KALDIRILDI",
-                        description=f"**{after.mention} adlı kullanıcıdan etiket rolü kaldırıldı!**",
-                        color=0xff0000
-                    )
-                    embed.add_field(
-                        name="",
-                        value="Üzgünüz, artık topluluğumuzu temsil etmiyorsun. Eğer tekrar katılmak istersen etiketini tekrar alabilirsin.",
-                        inline=False
-                    )
-                    embed.set_thumbnail(url=after.display_avatar.url)
-                    embed.set_author(name=after.name, icon_url=after.display_avatar.url)
-                    await kanal.send(embed=embed)
-                    print(f'{after.name} adlı kullanıcıdan rol çekildi, uyarı mesajı atıldı.')
-            except Exception as e:
-                print(f'Rol çekme hatası: {e}')
+        if after.id not in role_removed_users:
+            role_removed_users.add(after.id)
+            
+            # Tag kaldırılınca rolü çek
+            rol = after.guild.get_role(HEDEF_ROLE_ID)
+            if rol:
+                try:
+                    await after.remove_roles(rol)
+                    print(f'{after.name} adlı kullanıcıdan {rol.name} rolü çekildi (Tag kaldırıldı)')
+                    
+                    kanal = bot.get_channel(KANAL_ID)
+                    if kanal:
+                        embed = discord.Embed(
+                            title="ROL KALDIRILDI",
+                            description=f"**{after.mention} adlı kullanıcıdan etiket rolü kaldırıldı!**",
+                            color=0xff0000
+                        )
+                        embed.add_field(
+                            name="",
+                            value="Üzgünüz, artık topluluğumuzu temsil etmiyorsun. Eğer tekrar katılmak istersen etiketini tekrar alabilirsin.",
+                            inline=False
+                        )
+                        embed.set_thumbnail(url=after.display_avatar.url)
+                        embed.set_author(name=after.name, icon_url=after.display_avatar.url)
+                        await kanal.send(embed=embed)
+                        print(f'{after.name} adlı kullanıcıdan rol çekildi, uyarı mesajı atıldı.')
+                except Exception as e:
+                    print(f'Rol çekme hatası: {e}')
 
 # --- 3. DURUM GÜNCELLENİNCE OTO ROL ---
 @bot.event
@@ -216,39 +220,43 @@ async def on_presence_update(before, after):
         if DURUM_TEXT.lower() in after.activity.name.lower():
             has_durum = True
     
-    # Eğer durumda /anonymousdc yoksa ve kullanıcıda rol varsa, rolü çek
+    # Eğer durumda /anonymousdc yoksa ve kullanıcıda rol varsa, rolü çek (tek mesaj)
     if not has_durum and rol and rol in after.roles:
-        try:
-            await after.remove_roles(rol)
-            print(f'{after.name} adlı kullanıcıdan {rol.name} rolü çekildi (Durum kaldırıldı)')
+        if after.id not in role_removed_users:
+            role_removed_users.add(after.id)
             
-            kanal = bot.get_channel(KANAL_ID)
-            if kanal:
-                embed = discord.Embed(
-                    title="ROL KALDIRILDI",
-                    description=f"**{after.mention} adlı kullanıcıdan durum rolü kaldırıldı!**",
-                    color=0xff0000
-                )
-                embed.add_field(
-                    name="",
-                    value="Durumundan /anonymousdc yazısını kaldırdığın için rolün alındı. Tekrar almak için durumuna /anonymousdc yazabilirsin.",
-                    inline=False
-                )
-                embed.set_thumbnail(url=after.display_avatar.url)
-                embed.set_author(name=after.name, icon_url=after.display_avatar.url)
-                await kanal.send(embed=embed)
-                print(f'{after.name} adlı kullanıcıdan rol çekildi, uyarı mesajı atıldı.')
-        except Exception as e:
-            print(f'Rol çekme hatası: {e}')
+            try:
+                await after.remove_roles(rol)
+                print(f'{after.name} adlı kullanıcıdan {rol.name} rolü çekildi (Durum kaldırıldı)')
+                
+                kanal = bot.get_channel(KANAL_ID)
+                if kanal:
+                    embed = discord.Embed(
+                        title="ROL KALDIRILDI",
+                        description=f"**{after.mention} adlı kullanıcıdan durum rolü kaldırıldı!**",
+                        color=0xff0000
+                    )
+                    embed.add_field(
+                        name="",
+                        value="Durumundan /anonymousdc yazısını kaldırdığın için rolün alındı. Tekrar almak için durumuna /anonymousdc yazabilirsin.",
+                        inline=False
+                    )
+                    embed.set_thumbnail(url=after.display_avatar.url)
+                    embed.set_author(name=after.name, icon_url=after.display_avatar.url)
+                    await kanal.send(embed=embed)
+                    print(f'{after.name} adlı kullanıcıdan rol çekildi, uyarı mesajı atıldı.')
+            except Exception as e:
+                print(f'Rol çekme hatası: {e}')
     
     # SONRA: Eğer durumda /anonymousdc varsa ve kullanıcıda rol yoksa, rol ver
     if has_durum and rol and rol not in after.roles:
-        try:
-            await after.add_roles(rol)
-            print(f'{after.name} adlı kullanıcıya {rol.name} rolü verildi (Durum: {after.activity.name})')
+        if after.id not in role_given_users:
+            role_given_users.add(after.id)
             
-            if after.id not in role_given_users:
-                role_given_users.add(after.id)
+            try:
+                await after.add_roles(rol)
+                print(f'{after.name} adlı kullanıcıya {rol.name} rolü verildi (Durum: {after.activity.name})')
+                
                 kanal = bot.get_channel(KANAL_ID)
                 if kanal:
                     embed = discord.Embed(
@@ -265,10 +273,10 @@ async def on_presence_update(before, after):
                     embed.set_author(name=after.name, icon_url=after.display_avatar.url)
                     await kanal.send(embed=embed)
                     print(f'{after.name} durumdan rol aldı, hoşgeldin mesajı atıldı.')
-        except discord.Forbidden:
-            print('Yetki hatası! Botun rolü, verilecek rolden yukarıda olmalı.')
-        except Exception as e:
-            print(f'Hata: {e}')
+            except discord.Forbidden:
+                print('Yetki hatası! Botun rolü, verilecek rolden yukarıda olmalı.')
+            except Exception as e:
+                print(f'Hata: {e}')
 
 # --- 4. SES KANALI KONTROLÜ ---
 @bot.event
