@@ -27,8 +27,8 @@ KANAL_ID = 1499771195585724598          # Mesaj Kanal ID
 DURUM_ROLE_ID = 1499771194323243279     # Durumda verilecek rol ID
 DURUM_TEXT = "/anonymousdc"             # Durumda aranacak yazı
 
-# KRAL TACI EMOJİSİ
-CROWN_EMOJI = "👑"  # Veya özel emoji ID'si
+# RESİM URL (Sağ üstte görünecek)
+THUMBNAIL_URL = "https://i.ibb.co/hJFwL8Yb/indir-4.jpg"
 
 # --- BOT BAŞLANGIÇ ---
 intents = discord.Intents.all()
@@ -36,6 +36,9 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Kullanıcı mesaj geçmişi (flood kontrolü için)
 user_message_history = {}
+
+# Rol alan kullanıcıları takip et (2 kere mesaj atmasın diye)
+role_given_users = set()
 
 # --- BOT HAZIR ---
 @bot.event
@@ -45,6 +48,7 @@ async def on_ready():
     print('⚡ Flood limit: 1 saniyede 3 mesaj (7 gün timeout)')
     print('🏷️ Tag sistemi aktif (Rol alınca mesaj)')
     print('📢 Durum sistemi aktif (/anonymousdc = rol)')
+    print('❌ Rol çekme sistemi aktif (Tag/durum kaldırılınca rol çekilir)')
     
     try:
         voice_channel = bot.get_channel(VOICE_CHANNEL_ID)
@@ -147,41 +151,67 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-# --- 2. ROL ALINCA MESAJ ATMA (Görseldeki gibi BÜYÜK YAZI) ---
+# --- 2. ROL ALINCA MESAJ ATMA (TEK MESAJ) ---
 @bot.event
 async def on_member_update(before, after):
-    # Hedef rol eklenmiş mi kontrol et
+    # --- ROL EKLENDİĞİNDE ---
     if HEDEF_ROLE_ID not in [r.id for r in before.roles] and HEDEF_ROLE_ID in [r.id for r in after.roles]:
-        
-        kanal = bot.get_channel(KANAL_ID)
-        if kanal:
-            # Görseldeki gibi Embed yapısı
-            embed = discord.Embed(
-                title="Hoşgeldin !",
-                description=f"**Krallığa Hoşgeldin Dostum**",
-                color=0x2b2d31  # Discord koyu gri (Görseldeki arka plan rengi)
-            )
+        # Eğer daha önce mesaj atılmadıysa (2 kere mesaj atmasın diye)
+        if after.id not in role_given_users:
+            role_given_users.add(after.id)
             
-            # Alt metin (Görseldeki gibi)
-            embed.add_field(
-                name="",
-                value="Sunucumuzun etiketini (tag'ini) aldığın için teşekkürler! Artık topluluğumuzu temsil ediyorsun. Bu etiketi taşıdığın sürece bu özel role sahip olacaksın.",
-                inline=False
-            )
-            
-            # Sağ üstte Kral Tacı emojisi (Görselde elmas var, sen kral tacı istedin)
-            # Custom emoji kullanmak istersen ID'sini yaz
-            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/👑.png")
-            
-            # Kullanıcının profil fotoğrafını sol üste koy (Görseldeki gibi)
-            embed.set_author(name=after.name, icon_url=after.display_avatar.url)
-            
-            # Alt kısımda tarih ve kalp (Görseldeki gibi)
-            # embed.set_footer(text=f"wase ❤️ {after.name} • {datetime.now().strftime('%d.%m.%Y %H:%M')}")
-            # Sen kalp yazısını kaldırmak istemiştin, o yüzden footer eklemiyorum
-            
-            await kanal.send(embed=embed)
-            print(f'📨 {after.name} adlı kullanıcı tag aldı, hoşgeldin mesajı atıldı.')
+            kanal = bot.get_channel(KANAL_ID)
+            if kanal:
+                embed = discord.Embed(
+                    title=" KRALLIĞA HOŞGELDİN ",
+                    description=f"**{after.mention} Krallığa Hoşgeldin Dostum!**",
+                    color=0x2b2d31
+                )
+                
+                # Alt metin
+                embed.add_field(
+                    name="",
+                    value="Sunucumuzun etiketini (tag'ini) aldığın için teşekkürler! Artık topluluğumuzu temsil ediyorsun. Bu etiketi taşıdığın sürece bu özel role sahip olacaksın.",
+                    inline=False
+                )
+                
+                # Sağ üstte resim
+                embed.set_thumbnail(url=THUMBNAIL_URL)
+                
+                # Sol üstte kullanıcı profili
+                embed.set_author(name=after.name, icon_url=after.display_avatar.url)
+                
+                await kanal.send(embed=embed)
+                print(f'📨 {after.name} adlı kullanıcı tag aldı, hoşgeldin mesajı atıldı.')
+    
+    # --- ROL KALDIRILDIĞINDA (Tag kaldırılınca) ---
+    elif HEDEF_ROLE_ID in [r.id for r in before.roles] and HEDEF_ROLE_ID not in [r.id for r in after.roles]:
+        # Rolü çek
+        rol = after.guild.get_role(HEDEF_ROLE_ID)
+        if rol:
+            try:
+                await after.remove_roles(rol)
+                print(f'❌ {after.name} adlı kullanıcıdan {rol.name} rolü çekildi (Tag kaldırıldı)')
+                
+                # Ayrı mesaj at
+                kanal = bot.get_channel(KANAL_ID)
+                if kanal:
+                    embed = discord.Embed(
+                        title="⚠️ ROL KALDIRILDI",
+                        description=f"**{after.mention} adlı kullanıcıdan etiket rolü kaldırıldı!**",
+                        color=0xff0000
+                    )
+                    embed.add_field(
+                        name="",
+                        value="Üzgünüz, artık topluluğumuzu temsil etmiyorsun. Eğer tekrar katılmak istersen etiketini tekrar alabilirsin.",
+                        inline=False
+                    )
+                    embed.set_thumbnail(url=THUMBNAIL_URL)
+                    embed.set_author(name=after.name, icon_url=after.display_avatar.url)
+                    await kanal.send(embed=embed)
+                    print(f'📨 {after.name} adlı kullanıcıdan rol çekildi, uyarı mesajı atıldı.')
+            except Exception as e:
+                print(f'❌ Rol çekme hatası: {e}')
 
 # --- 3. DURUM GÜNCELLENİNCE OTO ROL ---
 @bot.event
@@ -200,29 +230,58 @@ async def on_presence_update(before, after):
                         await after.add_roles(rol)
                         print(f'✅ {after.name} adlı kullanıcıya {rol.name} rolü verildi (Durum: {after.activity.name})')
                         
-                        # Durumdan rol alınca da aynı mesajı at
-                        kanal = bot.get_channel(KANAL_ID)
-                        if kanal:
-                            embed = discord.Embed(
-                                title="Hoşgeldin !",
-                                description=f"**Krallığa Hoşgeldin Dostum**",
-                                color=0x2b2d31
-                            )
-                            embed.add_field(
-                                name="",
-                                value="Sunucumuzun etiketini (tag'ini) aldığın için teşekkürler! Artık topluluğumuzu temsil ediyorsun. Bu etiketi taşıdığın sürece bu özel role sahip olacaksın.",
-                                inline=False
-                            )
-                            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/👑.png")
-                            embed.set_author(name=after.name, icon_url=after.display_avatar.url)
-                            await kanal.send(embed=embed)
-                            print(f'📨 {after.name} durumdan rol aldı, hoşgeldin mesajı atıldı.')
+                        # Durumdan rol alınca mesaj at (2 kere atmasın diye kontrol)
+                        if after.id not in role_given_users:
+                            role_given_users.add(after.id)
+                            kanal = bot.get_channel(KANAL_ID)
+                            if kanal:
+                                embed = discord.Embed(
+                                    title="✨ KRALLIĞA HOŞGELDİN ✨",
+                                    description=f"**{after.mention} Krallığa Hoşgeldin Dostum!**",
+                                    color=0x2b2d31
+                                )
+                                embed.add_field(
+                                    name="",
+                                    value="Durumuna /anonymousdc yazarak topluluğumuza katıldın! Artık bu özel role sahipsin.",
+                                    inline=False
+                                )
+                                embed.set_thumbnail(url=THUMBNAIL_URL)
+                                embed.set_author(name=after.name, icon_url=after.display_avatar.url)
+                                await kanal.send(embed=embed)
+                                print(f'📨 {after.name} durumdan rol aldı, hoşgeldin mesajı atıldı.')
                     except discord.Forbidden:
                         print('❌ Yetki hatası! Botun rolü, verilecek rolden yukarıda olmalı.')
                     except Exception as e:
                         print(f'❌ Hata: {e}')
             else:
                 print(f'⚠️ Rol bulunamadı! ID: {DURUM_ROLE_ID}')
+        else:
+            # Eğer durumda /anonymousdc yoksa ve kullanıcıda rol varsa, rolü çek
+            rol = after.guild.get_role(DURUM_ROLE_ID)
+            if rol and rol in after.roles:
+                try:
+                    await after.remove_roles(rol)
+                    print(f'❌ {after.name} adlı kullanıcıdan {rol.name} rolü çekildi (Durum kaldırıldı)')
+                    
+                    # Ayrı mesaj at
+                    kanal = bot.get_channel(KANAL_ID)
+                    if kanal:
+                        embed = discord.Embed(
+                            title="⚠️ ROL KALDIRILDI",
+                            description=f"**{after.mention} adlı kullanıcıdan durum rolü kaldırıldı!**",
+                            color=0xff0000
+                        )
+                        embed.add_field(
+                            name="",
+                            value="Durumundan /anonymousdc yazısını kaldırdığın için rolün alındı. Tekrar almak için durumuna /anonymousdc yazabilirsin.",
+                            inline=False
+                        )
+                        embed.set_thumbnail(url=THUMBNAIL_URL)
+                        embed.set_author(name=after.name, icon_url=after.display_avatar.url)
+                        await kanal.send(embed=embed)
+                        print(f'📨 {after.name} adlı kullanıcıdan rol çekildi, uyarı mesajı atıldı.')
+                except Exception as e:
+                    print(f'❌ Rol çekme hatası: {e}')
 
 # --- 4. SES KANALI KONTROLÜ ---
 @bot.event
