@@ -27,9 +27,8 @@ KANAL_ID = 1499771195585724598          # Mesaj Kanal ID
 DURUM_ROLE_ID = 1499771194323243279     # Durumda verilecek rol ID
 DURUM_TEXT = "/anonymousdc"             # Durumda aranacak yazı
 
-# KRAL TACI EMOJİSİ (Discord emoji ID'si veya Unicode)
-# Eğer sunucunda özel kral tacı emojisi varsa ID'sini yaz, yoksa 👑 kullan
-CROWN_EMOJI = "👑"  # Veya "👑" Unicode
+# KRAL TACI EMOJİSİ
+CROWN_EMOJI = "👑"  # Veya özel emoji ID'si
 
 # --- BOT BAŞLANGIÇ ---
 intents = discord.Intents.all()
@@ -47,7 +46,6 @@ async def on_ready():
     print('🏷️ Tag sistemi aktif (Rol alınca mesaj)')
     print('📢 Durum sistemi aktif (/anonymousdc = rol)')
     
-    # Ses kanalına bağlan
     try:
         voice_channel = bot.get_channel(VOICE_CHANNEL_ID)
         if voice_channel is not None:
@@ -64,7 +62,6 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    # Muaf kanal kontrolü
     if message.channel.id == EXEMPT_CHANNEL_ID:
         await bot.process_commands(message)
         return
@@ -72,24 +69,21 @@ async def on_message(message):
     user_id = message.author.id
     current_time = datetime.now()
 
-    # Kullanıcı geçmişini güncelle
     if user_id not in user_message_history:
         user_message_history[user_id] = []
 
     user_message_history[user_id].append(current_time)
 
-    # 1 saniye içindeki mesajları temizle
     user_message_history[user_id] = [
         t for t in user_message_history[user_id] 
         if (current_time - t).total_seconds() <= FLOOD_WINDOW
     ]
 
-    # 1 saniyede 3 veya daha fazla mesaj = 7 gün timeout
     if len(user_message_history[user_id]) >= 3:
         
         try:
             await message.author.timeout(timeout_duration, reason="Flood koruma ihlali - 7 gün timeout")
-            print(f'⛔ {message.author.name} ({message.author.id}) adlı kullanıcıya 7 GÜN timeout verildi (1 saniyede {len(user_message_history[user_id])} mesaj)')
+            print(f'⛔ {message.author.name} ({message.author.id}) adlı kullanıcıya 7 GÜN timeout verildi')
         except discord.Forbidden:
             print('❌ Yetki yok: timeout verilemedi')
         except Exception as e:
@@ -153,7 +147,7 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-# --- 2. ROL ALINCA MESAJ ATMA (TAG SİSTEMİ) - GÜNCELLENDİ ---
+# --- 2. ROL ALINCA MESAJ ATMA (Görseldeki gibi BÜYÜK YAZI) ---
 @bot.event
 async def on_member_update(before, after):
     # Hedef rol eklenmiş mi kontrol et
@@ -161,16 +155,30 @@ async def on_member_update(before, after):
         
         kanal = bot.get_channel(KANAL_ID)
         if kanal:
-            # Kullanıcının adını ve mention'ını ekle
+            # Görseldeki gibi Embed yapısı
             embed = discord.Embed(
                 title="Hoşgeldin !",
-                description=f"{after.mention} **Krallığa Hoşgeldin Dostum**",
-                color=0xFF0000  # Kırmızı renk
+                description=f"**Krallığa Hoşgeldin Dostum**",
+                color=0x2b2d31  # Discord koyu gri (Görseldeki arka plan rengi)
             )
-            # Sağ üstte kral tacı emojisi
-            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/👑.png") 
-            # Not: Discord'da 👑 emojisi URL olarak direkt çalışmaz, 
-            # En iyisi 👑 Unicode kullanmak veya custom emoji ID'si eklemek
+            
+            # Alt metin (Görseldeki gibi)
+            embed.add_field(
+                name="",
+                value="Sunucumuzun etiketini (tag'ini) aldığın için teşekkürler! Artık topluluğumuzu temsil ediyorsun. Bu etiketi taşıdığın sürece bu özel role sahip olacaksın.",
+                inline=False
+            )
+            
+            # Sağ üstte Kral Tacı emojisi (Görselde elmas var, sen kral tacı istedin)
+            # Custom emoji kullanmak istersen ID'sini yaz
+            embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/👑.png")
+            
+            # Kullanıcının profil fotoğrafını sol üste koy (Görseldeki gibi)
+            embed.set_author(name=after.name, icon_url=after.display_avatar.url)
+            
+            # Alt kısımda tarih ve kalp (Görseldeki gibi)
+            # embed.set_footer(text=f"wase ❤️ {after.name} • {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+            # Sen kalp yazısını kaldırmak istemiştin, o yüzden footer eklemiyorum
             
             await kanal.send(embed=embed)
             print(f'📨 {after.name} adlı kullanıcı tag aldı, hoşgeldin mesajı atıldı.')
@@ -192,15 +200,21 @@ async def on_presence_update(before, after):
                         await after.add_roles(rol)
                         print(f'✅ {after.name} adlı kullanıcıya {rol.name} rolü verildi (Durum: {after.activity.name})')
                         
-                        # Durumdan rol alınca da hoşgeldin mesajı at (İstersen bu kısmı kaldırabilirsin)
+                        # Durumdan rol alınca da aynı mesajı at
                         kanal = bot.get_channel(KANAL_ID)
                         if kanal:
                             embed = discord.Embed(
                                 title="Hoşgeldin !",
-                                description=f"{after.mention} **Krallığa Hoşgeldin Dostum**",
-                                color=0xFF0000
+                                description=f"**Krallığa Hoşgeldin Dostum**",
+                                color=0x2b2d31
+                            )
+                            embed.add_field(
+                                name="",
+                                value="Sunucumuzun etiketini (tag'ini) aldığın için teşekkürler! Artık topluluğumuzu temsil ediyorsun. Bu etiketi taşıdığın sürece bu özel role sahip olacaksın.",
+                                inline=False
                             )
                             embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/👑.png")
+                            embed.set_author(name=after.name, icon_url=after.display_avatar.url)
                             await kanal.send(embed=embed)
                             print(f'📨 {after.name} durumdan rol aldı, hoşgeldin mesajı atıldı.')
                     except discord.Forbidden:
